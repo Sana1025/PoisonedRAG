@@ -1,20 +1,17 @@
-"""PyQt5 GUI wrapper for the PoisonedRAG-style retrieval experiment."""
+
 import sys
 import traceback
 
-# Load torch (via the experiment module) BEFORE PyQt5: on Windows, PyQt5
-# mutates the DLL search path in a way that breaks torch's c10.dll loader
-# if Qt is imported first.
-from poison_retrieval_experiment import run_experiment  # noqa: E402
+from poison_retrieval_experiment import run_experiment  
 
-import matplotlib  # noqa: E402
+import matplotlib 
 matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas  # noqa: E402
-from matplotlib.figure import Figure  # noqa: E402
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas  
+from matplotlib.figure import Figure  
 
-from PyQt5.QtCore import Qt, QThread, pyqtSignal  # noqa: E402
-from PyQt5.QtGui import QColor, QFont  # noqa: E402
-from PyQt5.QtWidgets import (  # noqa: E402
+from PyQt5.QtCore import Qt, QThread, pyqtSignal  
+from PyQt5.QtGui import QColor, QFont  
+from PyQt5.QtWidgets import (  
     QApplication, QHBoxLayout, QHeaderView, QLabel, QMainWindow, QPlainTextEdit,
     QPushButton, QStatusBar, QTabWidget, QTableWidget, QTableWidgetItem,
     QVBoxLayout, QWidget,
@@ -47,7 +44,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
 
-        # Top bar
+   
         top = QHBoxLayout()
         self.run_btn = QPushButton("Run Experiment")
         self.run_btn.clicked.connect(self.start_experiment)
@@ -56,7 +53,6 @@ class MainWindow(QMainWindow):
         top.addWidget(self.status_label, stretch=1)
         root.addLayout(top)
 
-        # Setup info pane
         self.setup_box = QPlainTextEdit()
         self.setup_box.setReadOnly(True)
         self.setup_box.setMaximumHeight(140)
@@ -65,7 +61,6 @@ class MainWindow(QMainWindow):
         self.setup_box.setFont(mono)
         root.addWidget(self.setup_box)
 
-        # Tabs
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, stretch=1)
 
@@ -79,7 +74,6 @@ class MainWindow(QMainWindow):
             tbl.verticalHeader().setVisible(False)
             tbl.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        # Visualization tab: two matplotlib canvases stacked vertically
         self.viz_widget = QWidget()
         viz_layout = QVBoxLayout(self.viz_widget)
         self.fig_topk = Figure(figsize=(8, 3.2), tight_layout=True)
@@ -141,7 +135,6 @@ class MainWindow(QMainWindow):
         ]
         self.setup_box.setPlainText("\n".join(setup_lines))
 
-        # Summary table
         ks = res["ks"]
         sum_headers = ["group", "n"] + [f"top-{k}" for k in ks] + ["mean rank"]
         self.summary_tbl.setColumnCount(len(sum_headers))
@@ -161,7 +154,6 @@ class MainWindow(QMainWindow):
                 QTableWidgetItem(f"{row['mean_rank']:.1f}"),
             )
 
-        # F1 table
         f1_headers = ["group", "precision", "recall", "F1"]
         self.f1_tbl.setColumnCount(len(f1_headers))
         self.f1_tbl.setHorizontalHeaderLabels(f1_headers)
@@ -175,7 +167,6 @@ class MainWindow(QMainWindow):
                 f1_item.setBackground(POISON_BG)
             self.f1_tbl.setItem(r, 3, f1_item)
 
-        # Per-query table — one row per (query, top-k slot)
         pq_headers = ["group", "query", "poison rank", "result rank",
                       "doc idx", "sim", "poison?", "snippet"]
         self.per_query_tbl.setColumnCount(len(pq_headers))
@@ -219,7 +210,6 @@ class MainWindow(QMainWindow):
         ks = res["ks"]
         summary_by_group = {row["group"]: row for row in res["summary"]}
 
-        # ---- Plot 1: top-k hit rate per group ----
         ax1 = self.fig_topk.add_subplot(111)
         x = np.arange(len(group_order))
         width = 0.8 / len(ks)
@@ -235,7 +225,6 @@ class MainWindow(QMainWindow):
         ax1.grid(axis="y", alpha=0.3)
         self.canvas_topk.draw_idle()
 
-        # ---- Plot 2: poison rank per query (log-x horizontal bars) ----
         ax2 = self.fig_rank.add_subplot(111)
         rows = []
         for pq in res["per_query"]:
@@ -259,7 +248,7 @@ class MainWindow(QMainWindow):
         ax2.text(5, -0.5, "k=5", fontsize=8, color="grey", ha="center")
         for spine in ("top", "right"):
             ax2.spines[spine].set_visible(False)
-        # Legend
+        
         from matplotlib.patches import Patch
         handles = [Patch(facecolor=group_colors[g], label=g) for g in group_order]
         ax2.legend(handles=handles, loc="lower right", fontsize=9)
